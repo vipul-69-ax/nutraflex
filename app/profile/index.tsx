@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { router } from 'expo-router';
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
+import useUserProfileStore from '@/store/useProfileStore';
 
 type NutritionProfile = {
   activity_level: string;
@@ -64,34 +65,7 @@ const ListItem: React.FC<{ label: string; items: string[] }> = ({ label, items }
 
 export default function ProfilePage() {
   const {logout} = useAuth()
-  const [profileData, setProfileData] = useState<NutritionProfile>()
-  useEffect(()=>{
-    const get_profile_data=async()=>{
-      try{
-      const _data = await AsyncStorage.getItem("nutrition_profile_data")
-      if(!_data){
-        throw Error("Cannot find data")
-      }
-      const data = JSON.parse(_data as string)
-      if(!data.selected_allergies){
-      data.selected_allergies = []
-      }
-      if(!data.selected_restrictions){
-        data.selected_restrictions = []
-      }
-      if(!data.other_allergies){
-        data.other_allergies = []
-      }
-      
-      setProfileData(data)
-      console.log("profile_data", data)
-    }
-    catch(err){
-      console.log(err)
-    }
-    }
-    get_profile_data()
-  },[])
+  const profileData = useUserProfileStore(state=>state.profile)
   return (
     <SafeAreaView style={styles.container}>
       
@@ -184,7 +158,7 @@ export default function ProfilePage() {
           <View style={styles.section}>
           <Text style={styles.sectionTitle}>Food Intake</Text>
           <Text style={styles.infoLabel}>
-              {profileData?.foodType}
+              {profileData?.foodtype}
           </Text>
           </View>
         </Animated.View>

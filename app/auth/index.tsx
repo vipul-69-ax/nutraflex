@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import Animated, { 
   FadeInDown, 
@@ -13,13 +13,20 @@ import { useAuth } from '@/hooks/useAuthentication';
 import { useForm } from '@/hooks/useForm';
 import { useKeyboardAwareBottomSheet } from '@/hooks/useKeyboardAwareBottomSheet';
 import { CustomTextInput } from '@/components/CustomTextInput';
+import { useNutritionProfile } from '@/hooks/useNutrition';
+import { router } from 'expo-router';
+import useUserProfileStore from '@/store/useProfileStore';
+import { NutritionProfile } from '@/types/nutrition';
 
 export default function LoginScreen() {
   const { signup, verifyEmail, login, forgotPassword, isLoading } = useAuth();
   const [bottomSheetContent, setBottomSheetContent] = useState<'forgotPassword' | 'verifyEmail' | null>(null);
   const [isSignupMode, setIsSignupMode] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
-
+  const { getNutritionProfile } = useNutritionProfile()
+  const [profileExists, setProfileExists] = useState<undefined | boolean>(undefined)
+  const {updateProfile} = useUserProfileStore()
+  
   const { fields, errors, handleChange, validateForm } = useForm(isSignupMode);
   const {
     bottomSheetRef,
@@ -66,7 +73,15 @@ export default function LoginScreen() {
         setBottomSheetContent('verifyEmail');
         openBottomSheet();
       } else {
-        await login({ email: fields.email, password: fields.password });
+        const blob = await login({ email: fields.email, password: fields.password });
+        const profile = await getNutritionProfile(blob.data.user.id as number)
+        if(!profile){
+          router.replace("/auth/details")
+          }else{
+            console.log("profile", profile)
+          updateProfile(profile as any)
+          router.replace("/food")
+          }
       }
     } catch (error) {
       Alert.alert('Error', 'An error occurred. Please try again.');

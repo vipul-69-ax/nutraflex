@@ -4,33 +4,25 @@ import api, { setAuthToken, clearAuthToken } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { useNutritionProfile } from './useNutrition';
-interface User {
-  id: string;
-  email: string;
-}
-
-interface AuthResponse {
-  user: User;
-  token: string;
-}
+import { AuthResponse } from '@/types/auth';
+import useAuthStore from '@/store/useAuthStore';
+import useUserProfileStore from '@/store/useProfileStore';
 
 export function useAuth() {
   const queryClient = useQueryClient();
   const {getNutritionProfile:nutritionData} = useNutritionProfile()
+  const {clearProfile} = useUserProfileStore()
+  const {setResponse, clearResponse} = useAuthStore()
+  const {getNutritionProfile} = useNutritionProfile()
   const setAuth = async (authResponse: AuthResponse) => {
-    await AsyncStorage.setItem('auth', JSON.stringify(authResponse));
+    setResponse(authResponse)
     setAuthToken(authResponse.token);
-    await AsyncStorage.setItem('user_id', authResponse.user.id.toString())
     queryClient.setQueryData(['user'], authResponse.user);
   };
 
-  const getUserId = async()=> {
-    const userId = await AsyncStorage.getItem("user_id")
-    return userId
-  }
-
   const clearAuth = async () => {
-    await AsyncStorage.removeItem('auth');
+    clearResponse()
+    clearProfile()
     clearAuthToken();
     router.replace("/auth")
     queryClient.setQueryData(['user'], null);
@@ -66,12 +58,8 @@ export function useAuth() {
     mutationFn: (data: { email: string; password: string }) =>
       api.post<AuthResponse>('/auth/login', data),
     onSuccess: (data) => {
+      console.log("here")
       setAuth(data.data);
-      if(!nutritionData){
-        router.replace("/auth/details")
-        }else{
-        router.replace("/food")
-        }
       return data.data;
     },
     onError:(e)=>e.message
@@ -97,7 +85,6 @@ export function useAuth() {
     signup: signupMutation.mutateAsync,
     verifyEmail: verifyEmailMutation.mutateAsync,
     login: loginMutation.mutateAsync,
-    getUserId,
     forgotPassword: forgotPasswordMutation.mutateAsync,
     resetPassword: resetPasswordMutation.mutateAsync,
     logout: logoutMutation,
@@ -110,27 +97,3 @@ export function useAuth() {
   };
 }
 
-export function useAuthState() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(undefined);
-  
-  useEffect(() => {
-    const checkAuthState = async () => {
-      try {
-        const token = await AsyncStorage.getItem('auth');
-        if(token == null){
-        setIsAuthenticated(false);
-        }
-        else{
-          setIsAuthenticated(true)
-        }
-      } catch (error) {
-        console.error('Error checking auth state:', error);
-        setIsAuthenticated(false);
-      }
-    };
-
-    checkAuthState();
-
-  }, []);
-    return isAuthenticated;
-  }

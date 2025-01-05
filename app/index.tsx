@@ -1,33 +1,21 @@
 import React, { useEffect, useState } from 'react'
 import { Redirect } from 'expo-router'
-import { useAuthState } from '@/hooks/useAuthentication'
 import { useNutritionProfile } from '@/hooks/useNutrition'
 import { View, Text, ActivityIndicator } from 'react-native'
 import { LoadingOverlay } from '@/components/LoadingOverlay'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import useAuthStore from '@/store/useAuthStore'
+import useUserProfileStore from '@/store/useProfileStore'
 
 export default function Index() {
-  const [isInitialized, setIsInitialized] = useState(false)
-  const isAuthenticated = useAuthState()
-  const { getNutritionProfile: nutritionData } = useNutritionProfile()
+  const {response} = useAuthStore()
+  const { getNutritionProfile } = useNutritionProfile()
+  const {profile} = useUserProfileStore()
 
-  useEffect(() => {
-    if (isAuthenticated !== undefined && nutritionData !== undefined) {
-      setIsInitialized(true)
-    }
-  }, [isAuthenticated, nutritionData])
-
-  if (!isInitialized) {
-    return (
-      <LoadingOverlay
-        message='Loading...'
-      />
-    )
-  }
-
-  if (!isAuthenticated) {
+  if (!response) {
     return <Redirect href="/auth" />
   }
 
-  return <Redirect href={nutritionData ? "/food" : "/auth/details"} />
+  return <Redirect href={!(profile == null) ? "/food" : "/auth/details"} />
 }
 

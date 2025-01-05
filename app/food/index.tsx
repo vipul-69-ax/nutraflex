@@ -1,152 +1,59 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AntDesign } from '@expo/vector-icons';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolate, runOnJS } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { Coffee, ForkKnife } from 'lucide-react-native';
 import { CircularProgress } from '@/components/CircularProgress';
 import { router } from 'expo-router';
-import useMealStore, { Meal } from '@/store/useMealStorage';
+import useMealStore, { Meal } from '@/store/useMealStore';
 import { useNutritionProfile } from '@/hooks/useNutrition';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SWIPE_THRESHOLD = -75;
-
-
-
-interface MealItemProps {
-  item: Meal;
-  onTrack: (meal: Meal) => void;
-  onRemove: (meal: Meal) => void;
-}
-
-const MealItem: React.FC<MealItemProps> = ({ item, onTrack, onRemove }) => {
-  const translateX = useSharedValue(0);
-  const itemHeight = useSharedValue(70);
-  const opacity = useSharedValue(1);
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      translateX.value = Math.min(0, Math.max(-SCREEN_WIDTH, event.translationX));
-    })
-    .onEnd((event) => {
-      const shouldBeDismissed = translateX.value < SWIPE_THRESHOLD;
-      if (shouldBeDismissed) {
-        translateX.value = withSpring(-SCREEN_WIDTH);
-        itemHeight.value = withSpring(0);
-        opacity.value = withSpring(0, {}, (finished) => {
-          if (finished) {
-            runOnJS(onRemove)(item);
-          }
-        });
-      } else {
-        translateX.value = withSpring(0);
-      }
-    });
-
-  const rStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  const rContainerStyle = useAnimatedStyle(() => ({
-    height: itemHeight.value,
-    opacity: opacity.value,
-    marginBottom: itemHeight.value === 0 ? 0 : 10,
-  }));
-
-  const rIconContainerStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      translateX.value,
-      [-75, 0],
-      [1, 0]
-    );
-    return { opacity };
-  });
-
-  return (
-    <Animated.View style={[styles.mealItem, rContainerStyle]}>
-      <View style={styles.deleteIconContainer}>
-        <Animated.View style={rIconContainerStyle}>
-          <AntDesign name="delete" size={24} color="white" />
-        </Animated.View>
-      </View>
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={[styles.mealItemContent, rStyle]}>
-          <View style={styles.mealItemIcon}>
-            <Coffee size={24} color="#1db954" />
-          </View>
-          <View style={styles.mealItemInfo}>
-            <Text style={styles.mealItemName}>{item.name}</Text>
-            <Text style={styles.mealItemMacros}>
-              {item.calories} cal • {item.protein}g P • {item.carbs}g C • {item.fat}g F
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.trackButton} onPress={() => {
-            if(!item.tracked){
-              onTrack(item);
-            }
-          }}>
-            {item.tracked ? 
-              <ForkKnife size={16} color="white" /> : 
-              <AntDesign name="plus" size={16} color="white" />
-            }
-          </TouchableOpacity>
-        </Animated.View>
-          </GestureDetector>
-    </Animated.View>
-  );
-};
-
-interface MealSectionProps {
-  title: string;
-  items: Meal[];
-  onTrack: (meal: Meal) => void;
-  onRemove: (meal: Meal) => void;
-}
-
-const MealSection: React.FC<MealSectionProps> = ({ title, items, onTrack, onRemove }) => {
-  return (
-    <View style={styles.mealContainer}>
-      <Text style={styles.mealTitle}>{title}</Text>
-      {items.map((item) => (
-        <MealItem key={item.id} item={item} onTrack={onTrack} onRemove={onRemove} />
-      ))}
-    </View>
-  );
-};
+import { MealSection } from '@/components/MealComponents';
+import useUserProfileStore from '@/store/useProfileStore';
 
 export default function App() {
   const insets = useSafeAreaInsets();
   const { meals, populateStore, isStoreEmpty, macroTotals, trackMeal, removeMeal, removeOldMeals } = useMealStore();
   const { suggestedMealPlan } = useNutritionProfile();
   const currentDate = new Date().toISOString().split('T')[0];
+  const {profile} = useUserProfileStore()
+  const [macros] = useState([
+    { 
+      name: 'Carbs', 
+      current: macroTotals.carbs, 
+      target: profile?.carbs, 
+      color: '#1db954', 
+      unit: 'g' 
+    },
+    { 
+      name: 'Fat', 
+      current: macroTotals.fat, 
+      target: profile?.fat, 
+      color: '#FFB6C1', 
+      unit: 'g' 
+    },
+    { 
+      name: 'Protein', 
+      current: macroTotals.protein, 
+      target: profile?.protein, 
+      color: '#FFE082', 
+      unit: 'g' 
+    },
+    { 
+      name: 'Calories', 
+      current: macroTotals.calories, 
+      target: profile?.calories, 
+      color: '#4DB6AC', 
+      unit: '' 
+    },
+  ])
   const todayMeals = meals[currentDate] || { breakfast: [], lunch: [], snack: [], dinner: [] };
-  const [maxMacros, setMaxMacros] = useState({
-    carbs: 1,
-    protein: 1,
-    calories: 1,
-    fat: 1
-  });
-  
   const getSuggestedMeals = async()=>{
     try {
-      const profileData = await AsyncStorage.getItem("nutrition_profile_data");
-      if (profileData) {
-        const parsed = JSON.parse(profileData);
-        setMaxMacros({
-          carbs: parseInt(parsed.carbs),
-          protein: parseInt(parsed.protein),
-          calories: parseInt(parsed.calories),
-          fat: parseInt(parsed.fat)
-        });
-      }
       
       if(isStoreEmpty()){
-        const res = await suggestedMealPlan.mutateAsync({
-          nutritionProfile: profileData
+        const res = await suggestedMealPlan({
+          nutritionProfile: profile
         });
         const formattedDate = new Date().toISOString().split('T')[0];
         
@@ -160,36 +67,6 @@ export default function App() {
     }
   }
   
-  const macros = [
-    { 
-      name: 'Carbs', 
-      current: macroTotals.carbs, 
-      target: maxMacros.carbs, 
-      color: '#1db954', 
-      unit: 'g' 
-    },
-    { 
-      name: 'Fat', 
-      current: macroTotals.fat, 
-      target: maxMacros.fat, 
-      color: '#FFB6C1', 
-      unit: 'g' 
-    },
-    { 
-      name: 'Protein', 
-      current: macroTotals.protein, 
-      target: maxMacros.protein, 
-      color: '#FFE082', 
-      unit: 'g' 
-    },
-    { 
-      name: 'Calories', 
-      current: macroTotals.calories, 
-      target: maxMacros.calories, 
-      color: '#4DB6AC', 
-      unit: '' 
-    },
-  ];
   const handleTrackMeal = (meal: Meal) => {
     trackMeal(meal.id);
   }
@@ -204,7 +81,6 @@ export default function App() {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      {suggestedMealPlan.isPending && <LoadingOverlay message='Loading...' />}
       <ScrollView>
         <View style={styles.header}>
           <View style={styles.iconContainer}>
@@ -227,13 +103,12 @@ export default function App() {
           </View>
         </View>
 
-        {true && 
         <View style={styles.macroContainer}>
           {macros.map((macro) => (
             <CircularProgress
               key={macro.name}
               value={macro.current}
-              maxValue={macro.target}
+              maxValue={macro.target as number}
               size={80}
               strokeWidth={8}
               color={macro.color}
@@ -241,7 +116,7 @@ export default function App() {
               unit={macro.unit}
             />
           ))}
-        </View>}
+        </View>
 
         <View style={styles.mealsContainer}>
           {todayMeals.breakfast.length > 0 && <MealSection title="Breakfast" items={todayMeals.breakfast} onTrack={handleTrackMeal} onRemove={handleRemoveMeal} />}
