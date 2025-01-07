@@ -15,6 +15,7 @@ import { useNutritionProfile } from '@/hooks/useNutrition';
 import useMealStore from '@/store/useMealStore';
 import { FoodData } from '@/types/food';
 import useUserProfileStore from '@/store/useProfileStore';
+import useAuthStore from '@/store/useAuthStore';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 type NutritionItemProps = {
@@ -35,6 +36,8 @@ export default function FoodDetailScreen() {
   const {foodData} = useLocalSearchParams()
   const food_data: FoodData = JSON.parse(foodData as string)
   const {profile} = useUserProfileStore()
+  const {response} = useAuthStore()
+  const userId = response?.user.id.toString() as string
   const headerStyle = useAnimatedStyle(() => ({
     height: interpolate(
       scrollY.value,
@@ -189,7 +192,8 @@ export default function FoodDetailScreen() {
                   carbs:food_data.nutritionalContent.carbs,
                   serving:food_data.quantity,
                   tracked:true
-                }
+                },
+                userId
               )
               router.back()
             }} style={styles.addButton}>

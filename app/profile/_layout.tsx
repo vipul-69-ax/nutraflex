@@ -5,7 +5,7 @@ export default function Profile(){
         headerShown:false
     }}>
         <Stack.Screen name="index" options={{
-            animation:"fade_from_bottom",
+            animation:"none",
         }}/>
         <Stack.Screen name="appinfo" options={{
             animation:"fade",

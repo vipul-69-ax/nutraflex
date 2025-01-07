@@ -37,6 +37,7 @@ export default function FoodScanner() {
 
   const handleCloseBottomSheet = () => {
     bottomSheetRef.current?.close();
+    Keyboard.dismiss()
   };
 
   const handleTextSearch = async(foodName: string, foodQuantity: string) => {

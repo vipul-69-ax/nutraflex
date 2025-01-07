@@ -50,7 +50,15 @@ export default function LoginScreen() {
 
   const handleVerifyEmail = async () => {
     try {
-      await verifyEmail({ email: fields.email, code: verificationCode });
+      const blob = await verifyEmail({ email: fields.email, code: verificationCode });
+      const profile = await getNutritionProfile(blob.data.user.id as number)
+        if(!profile){
+          router.replace("/auth/details")
+          }else{
+          console.log("profile", profile)
+          updateProfile(profile as any)
+          router.replace("/food")
+          }
       Alert.alert('Success', 'Email verified successfully');
       closeBottomSheet();
     } catch (error) {
@@ -78,7 +86,7 @@ export default function LoginScreen() {
         if(!profile){
           router.replace("/auth/details")
           }else{
-            console.log("profile", profile)
+          console.log("profile", profile)
           updateProfile(profile as any)
           router.replace("/food")
           }

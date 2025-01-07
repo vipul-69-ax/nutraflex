@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from 'react-nati
 import { AntDesign } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolate, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { Coffee, ForkKnife } from 'lucide-react-native';
+import { Apple, Check, Coffee, CookingPot, Croissant, ForkKnife, Milk, Sandwich } from 'lucide-react-native';
 import { Meal } from '@/store/useMealStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -11,11 +11,12 @@ const SWIPE_THRESHOLD = -75;
 
 interface MealItemProps {
   item: Meal;
+  title:string;
   onTrack: (meal: Meal) => void;
   onRemove: (meal: Meal) => void;
 }
 
-export const MealItem: React.FC<MealItemProps> = ({ item, onTrack, onRemove }) => {
+export const MealItem: React.FC<MealItemProps> = ({ item, onTrack, onRemove, title }) => {
   const translateX = useSharedValue(0);
   const itemHeight = useSharedValue(70);
   const opacity = useSharedValue(1);
@@ -68,10 +69,13 @@ export const MealItem: React.FC<MealItemProps> = ({ item, onTrack, onRemove }) =
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.mealItemContent, rStyle]}>
           <View style={styles.mealItemIcon}>
-            <Coffee size={24} color="#1db954" />
+            {title == 'breakfast' && <Coffee size={24} color="#1db954" />}
+            {title == 'lunch' && <Apple size={24} color="#1db954" />}
+            {title == 'snack' && <Croissant size={24} color="#1db954" />}
+            {title == 'dinner' && <CookingPot size={24} color="#1db954" />}
           </View>
           <View style={styles.mealItemInfo}>
-            <Text style={styles.mealItemName}>{item.name}</Text>
+            <Text style={styles.mealItemName} numberOfLines={2}>{item.name}</Text>
             <Text style={styles.mealItemMacros}>
               {item.calories} cal • {item.protein}g P • {item.carbs}g C • {item.fat}g F
             </Text>
@@ -82,7 +86,7 @@ export const MealItem: React.FC<MealItemProps> = ({ item, onTrack, onRemove }) =
             }
           }}>
             {item.tracked ? 
-              <ForkKnife size={16} color="white" /> : 
+              <Check size={16} color="white" /> : 
               <AntDesign name="plus" size={16} color="white" />
             }
           </TouchableOpacity>
@@ -104,7 +108,7 @@ export const MealSection: React.FC<MealSectionProps> = ({ title, items, onTrack,
     <View style={styles.mealContainer}>
       <Text style={styles.mealTitle}>{title}</Text>
       {items.map((item) => (
-        <MealItem key={item.id} item={item} onTrack={onTrack} onRemove={onRemove} />
+        <MealItem key={item.id} title={title} item={item} onTrack={onTrack} onRemove={onRemove} />
       ))}
     </View>
   );
@@ -181,7 +185,7 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 3.84,
-      elevation: 5,
+      elevation: 2,
       overflow: 'hidden',
     },
     mealItemContent: {

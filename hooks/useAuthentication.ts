@@ -45,12 +45,6 @@ export function useAuth() {
       api.post<AuthResponse>('/auth/verify-email', data),
     onSuccess: (data) => {
       setAuth(data.data);
-      if(!nutritionData){
-      router.replace("/auth/details")
-      }else{
-      router.replace("/food")
-      }
-      return data.data;
     },
   });
 

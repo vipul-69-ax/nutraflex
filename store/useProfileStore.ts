@@ -1,25 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { UserProfile } from '@/types/profile';
 
-interface UserProfile {
-  activity_level?: string;
-  age?: number;
-  allergies?: boolean;
-  calories?: number;
-  carbs?: number;
-  dietary_restrictions?: boolean;
-  fat?: number;
-  foodtype?: string;
-  gender?: string;
-  goal?: string;
-  height?: string;
-  other_allergies?: string;
-  protein?: number;
-  selected_allergies?: string[];
-  selected_restrictions?: string[];
-  weight?: string;
-}
+
 
 interface UserProfileStore {
   profile: UserProfile | null;

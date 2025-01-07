@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useCallback, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -12,32 +12,35 @@ import Animated, {
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Search, Camera } from 'lucide-react-native';
+import { X, Search, Camera, Sandwich } from 'lucide-react-native';
+import useUserProfileStore from '@/store/useProfileStore';
+import { useNutritionProfile } from '@/hooks/useNutrition';
+import { UserProfile } from '@/types/profile';
+import useMealStore from '@/store/useMealStore';
+import useAuthStore from '@/store/useAuthStore';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const MAX_TRANSLATE_Y = -SCREEN_HEIGHT / 2;
 
-interface FoodSearchBottomSheetProps {
+interface MealPlannerSheetProps {
   onSearch: (foodName: string, foodQuantity: string) => void;
   onClose: () => void;
 }
 
-export interface FoodSearchBottomSheetRef {
+export interface MealPlannerSheetRef {
   open: () => void;
   close: () => void;
 }
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
-const FoodSearchBottomSheet = forwardRef<FoodSearchBottomSheetRef, FoodSearchBottomSheetProps>(
+const MealPlannerSheet = forwardRef<MealPlannerSheetRef, MealPlannerSheetProps>(
   ({ onSearch, onClose }, ref) => {
     const translateY = useSharedValue(0);
     const keyboard = useAnimatedKeyboard()
     const active = useSharedValue(false);
-    const [foodName, setFoodName] = useState('');
-    const [foodQuantity, setFoodQuantity] = useState('');
-    const insets = useSafeAreaInsets();
-
+    const [planDetails, setPlanDetails] = useState('');
+    const {personalMealPlan, isLoading} = useNutritionProfile()
     const scrollTo = useCallback((destination: number) => {
       'worklet';
       active.value = destination !== 0;
@@ -66,7 +69,6 @@ const FoodSearchBottomSheet = forwardRef<FoodSearchBottomSheetRef, FoodSearchBot
       .onEnd(() => {
         if (translateY.value > -SCREEN_HEIGHT / 3) {
           scrollTo(0);
-          onClose();
         } else {
           scrollTo(MAX_TRANSLATE_Y);
         }
@@ -85,52 +87,57 @@ const FoodSearchBottomSheet = forwardRef<FoodSearchBottomSheetRef, FoodSearchBot
         transform: [{ translateY: translateY.value - keyboard.height.value }],
       };
     });
+    const {profile} = useUserProfileStore()
+    const {populateStore} = useMealStore()
+    const {response} = useAuthStore()
+    const userId = response?.user.id.toString()
+    const getCurrentDate = new Date().toISOString().split('T')[0];
 
-    const handleSearch = () => {
-      onSearch(foodName, foodQuantity);
-    };
+    const handleSearch = async () => {
+        if(!userId) return
+        const res = await personalMealPlan({nutritionProfile:profile, planDetails:planDetails})
+        populateStore([{
+            date:getCurrentDate,
+            userId:userId,
+            categories:res
+        }], userId)
+        onClose()
+    };  
 
     return (
         <Animated.View style={[styles.bottomSheetContainer, rBottomSheetStyle]}>
           <View style={styles.content}>
             <View style={styles.header}>
-              <Text style={styles.headerTitle}>Search Food</Text>
+              <Text style={styles.headerTitle}>Meal Plan{'\n'}
+            <Text style={{fontSize:14}}>Current meals will be replaced.</Text>
+              </Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                 <X size={24} color="#1a1a1a" />
               </TouchableOpacity>
             </View>
-
             <View style={styles.inputSection}>
-              <Text style={styles.label}>Food Name</Text>
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter food name"
-                  value={foodName}
-                  onChangeText={setFoodName}
+                  placeholder="Describle your meal plan. It will be curated to your plan."
+                  value={planDetails}
+                  multiline
+                  onChangeText={setPlanDetails}
                   placeholderTextColor="#A0AEC0"
                 />
-                <Camera size={20} color="#666" style={styles.inputIcon} />
+                <Sandwich size={20} color="#666" style={styles.inputIcon} />
               </View>
 
-              <Text style={styles.label}>Quantity</Text>
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter quantity"
-                  value={foodQuantity}
-                  onChangeText={setFoodQuantity}
-                  placeholderTextColor="#A0AEC0"
-                />
-                <Search size={20} color="#666" style={styles.inputIcon} />
-              </View>
             </View>
 
             <TouchableOpacity 
               style={styles.button} 
               onPress={handleSearch}
             >
-              <Text style={styles.buttonText}>Done</Text>
+              {isLoading?<ActivityIndicator
+                size={18}
+                color={"white"}
+              />:<Text style={styles.buttonText}>Search</Text>}
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -192,7 +199,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     paddingHorizontal: 16,
-    height: 56,
+    height: 100,
   },
   input: {
     flex: 1,
@@ -203,7 +210,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   button: {
-    backgroundColor: '#6366F1',
+    backgroundColor: '#1db954',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -216,5 +223,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FoodSearchBottomSheet;
+export default MealPlannerSheet;
 
