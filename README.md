@@ -38,7 +38,9 @@ Whether you're aiming to lose weight, gain muscle, or simply lead a healthier li
 
 | Home Screen           | Scanned Food Details      | User Profile       |
 |------------------------|------------------------|------------------------|
-| ![Home](https://www.dropbox.com/scl/fi/rl3syngmq2ijqh65nbjt3/IMG_2046.png?rlkey=cjmvl11bko7as8hwc0fsz9zji&st=cy4b0dw7&dl=0) | ![Food Details](https://www.dropbox.com/scl/fi/pp3u11cbgc7mqh06p7hfy/IMG_2047.png?rlkey=8265s2pv7k944c9ach8slpg9e&st=7l1ny0v9&dl=0) | ![Planner]([https://via.placeholder.com/300x600](https://www.dropbox.com/scl/fi/c6mc59op89455cpblndyq/IMG_2048.png?rlkey=r04t8hbh3n2u45pqzuye4mnol&st=tb7oevxu&dl=0)) |
+| ![Home](https://github.com/user-attachments/assets/da966cdf-0130-4260-920f-baeb692b4e64) | ![Food Details](https://github.com/user-attachments/assets/490fa21c-c8cc-4080-9e39-daf50854991d)
+| ![Profile](https://github.com/user-attachments/assets/49a17268-335d-4d8c-9ac7-aa0f4d731331)
+ |
 
 ---
 
