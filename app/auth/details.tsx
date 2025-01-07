@@ -9,9 +9,12 @@ import Animated, {
   FadeInUp,
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NutritionProfile, useNutritionProfile } from '@/hooks/useNutrition';
+import { useNutritionProfile } from '@/hooks/useNutrition';
+import { NutritionProfile } from '@/types/nutrition';
 import { router } from 'expo-router';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import useAuthStore from '@/store/useAuthStore';
+import { useAuth } from '@/hooks/useAuthentication';
 
 const { width } = Dimensions.get('window');
 
@@ -83,7 +86,7 @@ export {
 export default function NutritionProfileForm() {
   const {updateNutritionProfile} = useNutritionProfile()
   const [loading, setLoading] = useState(false)
-
+  const {logout} = useAuth()
   const { control, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
     defaultValues: {
       age: '',
@@ -102,17 +105,17 @@ export default function NutritionProfileForm() {
 
   const hasDietaryRestrictions = watch('dietaryRestrictions');
   const hasAllergies = watch('allergies');
+  const {response} = useAuthStore()
 
   const onSubmit = async(data: FormData) => {
     try{
       setLoading(true)
-    const userId = await AsyncStorage.getItem("user_id")
+    const userId = response?.user.id
     if(!userId){
       return
     }
-    console.log(data,"datat")
     const formattedData:NutritionProfile = {
-      userId:parseInt(userId),
+      userId:userId,
       age:parseInt(data.age),
       height:parseInt(data.height),
       weight:parseInt(data.weight),
@@ -125,7 +128,6 @@ export default function NutritionProfileForm() {
       activity_level:data.activityLevel,
       goal:data.goal
     }
-    console.log(formattedData)
     await updateNutritionProfile(formattedData)
     router.replace("/food")
   }
@@ -359,6 +361,9 @@ export default function NutritionProfileForm() {
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)}>
             <Text style={styles.submitButtonText}>Submit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.submitButton} onPress={logout}>
+            <Text style={styles.submitButtonText}>Logout</Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>

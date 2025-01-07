@@ -11,15 +11,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProgressBar } from '@/components/ProgressBar';
 import { router, useLocalSearchParams } from 'expo-router';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNutritionProfile } from '@/hooks/useNutrition';
-import useMealStore from '@/store/useMealStorage';
+import useMealStore from '@/store/useMealStore';
 import { FoodData } from '@/types/food';
+import useUserProfileStore from '@/store/useProfileStore';
+import useAuthStore from '@/store/useAuthStore';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 type NutritionItemProps = {
     label: string;           
     value: number | string;  
@@ -33,9 +31,13 @@ export default function FoodDetailScreen() {
   const mealStore = useMealStore()
   const scrollY = useSharedValue(0);
   const headerHeight = 300;
+  const [eatSuggestion, setEatSuggestion] = useState("")
   const {shouldIEat} = useNutritionProfile()
   const {foodData} = useLocalSearchParams()
   const food_data: FoodData = JSON.parse(foodData as string)
+  const {profile} = useUserProfileStore()
+  const {response} = useAuthStore()
+  const userId = response?.user.id.toString() as string
   const headerStyle = useAnimatedStyle(() => ({
     height: interpolate(
       scrollY.value,
@@ -105,16 +107,15 @@ export default function FoodDetailScreen() {
   });
 
   const shouldIEatCallback = async()=>{
-    const data = await AsyncStorage.getItem("nutrition_profile_data")
-    await shouldIEat.mutateAsync({
-      nutritionProfile:data as any,
+    const res = await shouldIEat({
+      nutritionProfile:profile as any,
       foodInfo:{
         name:food_data.name,
         nutritionalContent:food_data.nutritionalContent,
         quantity:food_data.quantity
       }
     })
-    
+    setEatSuggestion(res.suggestions)
   }
 
   useEffect(()=>{
@@ -176,7 +177,7 @@ export default function FoodDetailScreen() {
                 <Text style={styles.sectionTitle}>Should I eat?</Text>
               </View>
               <Text style={styles.adviceText}>
-                {shouldIEat.data?.data.suggestions}
+                {eatSuggestion}
               </Text>
             </View>
 
@@ -191,7 +192,8 @@ export default function FoodDetailScreen() {
                   carbs:food_data.nutritionalContent.carbs,
                   serving:food_data.quantity,
                   tracked:true
-                }
+                },
+                userId
               )
               router.back()
             }} style={styles.addButton}>

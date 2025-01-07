@@ -1,124 +1,73 @@
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { DayMeals } from '@/store/useMealStorage';
+import useUserProfileStore from '@/store/useProfileStore';
+import { NutritionProfile, MacroSuggestion, ShouldIEatRequest, ShouldIEatResponse } from '@/types/nutrition';
+import { DayMeals } from '@/store/useMealStore';
+import { UserProfile } from '@/types/profile';
 
-export type NutritionProfile = {
-  userId: number;
-  age: number;
-  height: number;
-  weight: number;
-  gender: string;
-  dietary_restrictions: boolean;
-  selected_restrictions: string[];
-  allergies: boolean;
-  selected_allergies: string[];
-  other_allergies: string;
-  activity_level: string;
-  goal: string;
-} | null
+const NUTRITION_PROFILE_KEY = 'nutritionProfile';
 
 export function useNutritionProfile() {
   const queryClient = useQueryClient();
+  const { updateProfile } = useUserProfileStore();
+  const getNutritionProfileMutation = useMutation<NutritionProfile | boolean, Error, number>({
+    mutationFn: async (id:number) => {
+      if (!id) throw new Error('User ID not found');
+      console.log("id", id)
+      const response = await api.post<NutritionProfile>('/nutrition/profile', { userId: id });
+      if(response.status == 204){
+        return false
+      }
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData([NUTRITION_PROFILE_KEY], data);
+      return data
+    }
+  });
 
-  const setNutritionProfile = async (profile: NutritionProfile) => {
-    await AsyncStorage.setItem('nutritionProfile', JSON.stringify(profile));
-    queryClient.setQueryData(['nutritionProfile'], profile);
-  };
+  const updateNutritionProfileMutation = useMutation<NutritionProfile, Error, NutritionProfile>({
+    mutationFn: async (data) => {
+      const response = await api.post<NutritionProfile>('/nutrition/profile-update', data);
+      return response.data;
+    },
+    onSuccess: async (data) => {
+      updateProfile({ ...data } as any);
+      queryClient.setQueryData([NUTRITION_PROFILE_KEY], data);
+    },
+  });
 
-  const clearNutritionProfile = async () => {
-    await AsyncStorage.removeItem('nutritionProfile');
-    queryClient.setQueryData(['nutritionProfile'], null);
-  };
-
-  const getNutritionProfileQuery = useQuery<NutritionProfile, Error>({
-    queryKey: ['nutritionProfile'],
-    queryFn: async () => {
-      const userId = await AsyncStorage.getItem('user_id');
-      if (!userId) throw new Error('User ID not found');
-      const response = await api.post<NutritionProfile>('/nutrition/profile', { userId: userId });
-      if(!response.data) return null;
+  const shouldIEatMutation = useMutation<ShouldIEatResponse, Error, ShouldIEatRequest>({
+    mutationFn: async (data) => {
+      const response = await api.post<ShouldIEatResponse>('/nutrition/should-i-eat', data);
       return response.data;
     },
   });
-
-  const updateNutritionProfileMutation = useMutation({
-    mutationFn: async(data: NutritionProfile) => 
-        api.post<NutritionProfile>('/nutrition/profile-update', data)
-    ,
-    onSuccess: async (data) => {
-      const resp = await getSuggestedMacros.mutateAsync(data.data);
-      await AsyncStorage.setItem("nutrition_profile_data", JSON.stringify({
-        ...data.data,
-        ...resp.data
-      }));
-      return data.data;
-    },
-    onError: (err) => {
-      return err.message;
-    }
-  });
-
-  const getSuggestedMacros = useMutation({
-    mutationFn: (data: NutritionProfile) =>
-      api.post<{
-        carbs:number,
-        protein:number,
-        fat:number,
-        calories:number,
-        foodType:string
-      }>('/nutrition/suggest-macros', {
-        nutritionProfile: data
-      }),
-    onSuccess: (data) => {
-      return data.data;
-    },
-    onError: (err) => {
-      return err.message;
-    }
-  });
-
-  const shouldIEatMutation = useMutation({
-    mutationFn: (data: {nutritionProfile:any, foodInfo:any}) =>
-      api.post<{suggestions:string}>('/nutrition/should-i-eat', {
-        nutritionProfile:data.nutritionProfile,
-        foodInfo:data.foodInfo
-      }),
-    onSuccess: (data) => {
-      return data.data;
-    },
-    onError: (err) => {
-      return err.message;
-    }
-  });
   
-  const suggestedMealPlan = useMutation({
-    mutationFn: (data: {nutritionProfile:any}) =>
-      api.post<DayMeals>('/nutrition/suggest-meal-plan', {
-        nutritionProfile:data.nutritionProfile,
-      }),
-    onSuccess: (data) => {
-      return data.data;
+  const suggestedMealPlanMutation = useMutation<any, Error, { nutritionProfile: UserProfile }>({
+    mutationFn: async (data) => {
+      const response = await api.post<any>('/nutrition/suggest-meal-plan', data);
+      return response.data;
     },
-    onError: (err) => {
-      return err.message;
+    retry:3,
+    retryDelay:0
+  });
+
+  const personalMealPlanMutation = useMutation<any, Error, { nutritionProfile: UserProfile, planDetails: string }>({
+    mutationFn: async (data) => {
+      const response = await api.post<any>('/nutrition/personal-meal-plan', data);
+      return response.data;
     }
   });
+
   return {
-    getNutritionProfile: getNutritionProfileQuery.data,
+    getNutritionProfile: getNutritionProfileMutation.mutateAsync,
     updateNutritionProfile: updateNutritionProfileMutation.mutateAsync,
-    setNutritionProfile,
-    shouldIEat:shouldIEatMutation,
-    clearNutritionProfile,
-    suggestedMealPlan,
-    isLoading:
-      getNutritionProfileQuery.isLoading ||
-      updateNutritionProfileMutation.isPending,
-    error:
-      getNutritionProfileQuery.error ||
-      updateNutritionProfileMutation.error
+    shouldIEat: shouldIEatMutation.mutateAsync,
+    suggestedMealPlan: suggestedMealPlanMutation.mutateAsync,
+    personalMealPlan:personalMealPlanMutation.mutateAsync,
+    isLoading: getNutritionProfileMutation.isPending || updateNutritionProfileMutation.isPending || personalMealPlanMutation.isPending,
+    error: getNutritionProfileMutation.error || updateNutritionProfileMutation.error,
   };
 }
 

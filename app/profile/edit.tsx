@@ -9,9 +9,12 @@ import Animated, {
   FadeInUp,
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NutritionProfile, useNutritionProfile } from '@/hooks/useNutrition';
+import { useNutritionProfile } from '@/hooks/useNutrition';
 import { router } from 'expo-router';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import useAuthStore from '@/store/useAuthStore';
+import { NutritionProfile } from '@/types/nutrition';
+import useUserProfileStore from '@/store/useProfileStore';
 
 const dietaryRestrictionOptions = [
   'Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free',
@@ -81,7 +84,7 @@ export {
 export default function NutritionProfileForm() {
   const {updateNutritionProfile} = useNutritionProfile()
   const [loading, setLoading] = useState(false)
-
+  const {profile} = useUserProfileStore()
   const { control, handleSubmit, watch, formState: { errors }, setValue } = useForm<FormData>({
     defaultValues: {
       age: '',
@@ -100,16 +103,16 @@ export default function NutritionProfileForm() {
 
   const hasDietaryRestrictions = watch('dietaryRestrictions');
   const hasAllergies = watch('allergies');
-
+  const {response:auth} = useAuthStore()
   const onSubmit = async(data: FormData) => {
     try{
       setLoading(true)
-    const userId = await AsyncStorage.getItem("user_id")
-    if(!userId){
+    const id = auth?.user.id 
+    if(!id){
       return
     }
     const formattedData:NutritionProfile = {
-      userId:parseInt(userId),
+      userId:id,
       age:parseInt(data.age),
       height:parseInt(data.height),
       weight:parseInt(data.weight),
@@ -122,7 +125,6 @@ export default function NutritionProfileForm() {
       activity_level:data.activityLevel,
       goal:data.goal
     }
-    console.log(formattedData)
     await updateNutritionProfile(formattedData)
     router.replace("/food")
   }
@@ -134,9 +136,18 @@ export default function NutritionProfileForm() {
   }
   };
   const getValues=async()=>{
-    const _data = await AsyncStorage.getItem("nutrition_profile_data")
-    const data = JSON.parse(_data as string)
-    console.log("here", data)
+    const data = profile
+    if(!data?.activity_level) return
+    if(!data?.age) return
+    if(!data?.height) return
+    if(!data?.gender) return
+    if(data?.dietary_restrictions == null) return
+    if(data?.selected_allergies == null) return
+    if(data?.selected_restrictions == null) return
+    if(data?.allergies == null) return
+    if(data?.other_allergies == null) return
+    if(!data?.weight) return
+    if(!data?.goal) return
     setValue("activityLevel", data?.activity_level)
     setValue("age", data.age.toString())
     setValue("height",data.height.toString())

@@ -5,13 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Info, LogOut } from 'lucide-react-native';
+import { Info, LogOut, Stethoscope, UserRoundPen } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuthentication';
 import { UserDetailsData } from '../auth/details';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { router } from 'expo-router';
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
+import useUserProfileStore from '@/store/useProfileStore';
 
 type NutritionProfile = {
   activity_level: string;
@@ -64,34 +65,7 @@ const ListItem: React.FC<{ label: string; items: string[] }> = ({ label, items }
 
 export default function ProfilePage() {
   const {logout} = useAuth()
-  const [profileData, setProfileData] = useState<NutritionProfile>()
-  useEffect(()=>{
-    const get_profile_data=async()=>{
-      try{
-      const _data = await AsyncStorage.getItem("nutrition_profile_data")
-      if(!_data){
-        throw Error("Cannot find data")
-      }
-      const data = JSON.parse(_data as string)
-      if(!data.selected_allergies){
-      data.selected_allergies = []
-      }
-      if(!data.selected_restrictions){
-        data.selected_restrictions = []
-      }
-      if(!data.other_allergies){
-        data.other_allergies = []
-      }
-      
-      setProfileData(data)
-      console.log("profile_data", data)
-    }
-    catch(err){
-      console.log(err)
-    }
-    }
-    get_profile_data()
-  },[])
+  const profileData = useUserProfileStore(state=>state.profile)
   return (
     <SafeAreaView style={styles.container}>
       
@@ -130,8 +104,18 @@ export default function ProfilePage() {
                     padding:"2%"
                   }
                 }}>
-              <MenuOption onSelect={() => router.push("/profile/appinfo")} text='About' />
-              <MenuOption onSelect={() => router.push("/profile/edit")} text='Profile Options' />
+              <MenuOption onSelect={() => router.push("/profile/edit")}>
+                <View className='flex-row gap-2'>
+                  <UserRoundPen size={24} color={"black"}/>
+                  <Text className='self-center text-lg'>Edit Account</Text>
+                </View>
+              </MenuOption>
+              <MenuOption onSelect={() => router.push("/profile/appinfo")}>
+              <View className='flex-row gap-2 pt-2'>
+                  <Info size={24} color={"black"}/>
+                  <Text className='self-center text-lg'>About App</Text>
+                </View>
+              </MenuOption>
             </MenuOptions>
             </Menu>
             <LogOut
@@ -163,7 +147,7 @@ export default function ProfilePage() {
             <Text style={styles.sectionTitle}>Dietary Information</Text>
             <ListItem label="Dietary Restrictions" items={!profileData?.selected_restrictions?["No dietary restrictions"]:profileData?.selected_restrictions.length<=0?["No dietary restrictions"]:profileData?.selected_restrictions} />
             <ListItem label="Allergies" items={!profileData?.selected_allergies?["No dietary restrictions"]:profileData?.selected_allergies.length<=0?["No dietary restrictions"]:profileData?.selected_allergies} />
-            <ListItem label="Other Allergies" items={!profileData?.other_allergies?["No dietary restrictions"]:profileData?.other_allergies.length<=0?["No dietary restrictions"]:profileData?.other_allergies} />
+            <ListItem label="Other Allergies" items={!profileData?.other_allergies?["No dietary restrictions"]:profileData?.other_allergies.split(",").length<=0?["No dietary restrictions"]:profileData?.other_allergies.split(",")} />
 
           </View>
 
@@ -184,7 +168,7 @@ export default function ProfilePage() {
           <View style={styles.section}>
           <Text style={styles.sectionTitle}>Food Intake</Text>
           <Text style={styles.infoLabel}>
-              {profileData?.foodType}
+              {profileData?.foodtype}
           </Text>
           </View>
         </Animated.View>
@@ -192,6 +176,7 @@ export default function ProfilePage() {
       {!profileData && <LoadingOverlay
         message='Wait...'
       />}
+
     </SafeAreaView>
   );
 }
