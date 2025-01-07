@@ -1,15 +1,3 @@
-# Nutraflex App
+# **NutraFlex: Your Personalized Nutrition and Fitness Companion**
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-    npx expo start
-   ```
+![Nutraflex Logo](https://github.com/user-attachments/assets/4d87e9e9-4005-47ea-a875-93289f03ef26)
