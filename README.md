@@ -49,6 +49,6 @@ Whether you're aiming to lose weight, gain muscle, or simply lead a healthier li
 
 ## 🌐 **Connect with Me**
 - **GitHub:** [vipul-69-ax](https://github.com/vipul-69-ax)
-- **LinkedIn:** [Your LinkedIn Profile](https://linkedin.com/in/vipulsharma2004)
-- **X.com:** [@YourHandle](https://x.com/VIPULSHARM91651)
+- **LinkedIn:** [Click Here](https://linkedin.com/in/vipulsharma2004)
+- **X.com:** [@VipulSharma](https://x.com/VIPULSHARM91651)
 
