@@ -36,6 +36,7 @@ export default function InfoPage() {
           </Text>
           <Text style={styles.listItem}>• Your nutrition profile</Text>
           <Text style={styles.listItem}>• Login information</Text>
+          <Text style={styles.listItem}>• Your food photos</Text>
           <Text style={styles.text}>
             No other personal data or food-related information is permanently stored by the app.
           </Text>

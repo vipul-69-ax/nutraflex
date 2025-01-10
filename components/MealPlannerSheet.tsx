@@ -1,29 +1,25 @@
 import React, { forwardRef, useImperativeHandle, useCallback, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
   interpolate,
   Extrapolate,
   useAnimatedKeyboard,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Search, Camera, Sandwich } from 'lucide-react-native';
+import { X, Coffee, Apple, Croissant, CookingPot, Sandwich } from 'lucide-react-native';
 import useUserProfileStore from '@/store/useProfileStore';
 import { useNutritionProfile } from '@/hooks/useNutrition';
-import { UserProfile } from '@/types/profile';
 import useMealStore from '@/store/useMealStore';
 import useAuthStore from '@/store/useAuthStore';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-const MAX_TRANSLATE_Y = -SCREEN_HEIGHT / 2;
+const MAX_TRANSLATE_Y = -SCREEN_HEIGHT + 100;
 
 interface MealPlannerSheetProps {
-  onSearch: (foodName: string, foodQuantity: string) => void;
   onClose: () => void;
 }
 
@@ -32,15 +28,21 @@ export interface MealPlannerSheetRef {
   close: () => void;
 }
 
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
-
 const MealPlannerSheet = forwardRef<MealPlannerSheetRef, MealPlannerSheetProps>(
-  ({ onSearch, onClose }, ref) => {
+  ({ onClose }, ref) => {
     const translateY = useSharedValue(0);
     const keyboard = useAnimatedKeyboard()
     const active = useSharedValue(false);
-    const [planDetails, setPlanDetails] = useState('');
+    const [mealPlans, setMealPlans] = useState({
+      breakfast: '',
+      lunch: '',
+      dinner: '',
+      snacks: ''
+    });
+    const [planDetails, setPlanDetails] = useState('')
     const {personalMealPlan, isLoading} = useNutritionProfile()
+    const insets = useSafeAreaInsets();
+
     const scrollTo = useCallback((destination: number) => {
       'worklet';
       active.value = destination !== 0;
@@ -84,63 +86,87 @@ const MealPlannerSheet = forwardRef<MealPlannerSheetRef, MealPlannerSheetProps>(
 
       return {
         borderRadius,
-        transform: [{ translateY: translateY.value - keyboard.height.value }],
+        transform: [{ translateY: translateY.value }],
       };
     });
+
     const {profile} = useUserProfileStore()
     const {populateStore} = useMealStore()
     const {response} = useAuthStore()
     const userId = response?.user.id.toString()
     const getCurrentDate = new Date().toISOString().split('T')[0];
 
-    const handleSearch = async () => {
-        if(!userId) return
-        const res = await personalMealPlan({nutritionProfile:profile, planDetails:planDetails})
-        populateStore([{
-            date:getCurrentDate,
-            userId:userId,
-            categories:res
-        }], userId)
-        onClose()
-    };  
+    const handleGeneratePlan = async () => {
+      if(!userId) return
+      const planDetailsToSend = Object.values(mealPlans).join('. ');
+      const res = await personalMealPlan({nutritionProfile:profile as any, planDetails: planDetailsToSend});
+      populateStore([{
+        date:getCurrentDate,
+        userId:userId,
+        categories:res
+      }], userId)
+      onClose()
+    };
 
     return (
+      <GestureDetector gesture={gesture}>
         <Animated.View style={[styles.bottomSheetContainer, rBottomSheetStyle]}>
-          <View style={styles.content}>
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>Meal Plan{'\n'}
-            <Text style={{fontSize:14}}>Current meals will be replaced.</Text>
-              </Text>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <X size={24} color="#1a1a1a" />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Plan Your Meals</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <X size={24} color="#1a1a1a" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView 
+            style={styles.content}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          >
             <View style={styles.inputSection}>
+              <Text style={styles.label}>Describe your meal plan</Text>
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Describle your meal plan. It will be curated to your plan."
+                  placeholder="Describe your meal plan for the day. It will be curated to your profile."
                   value={planDetails}
                   multiline
                   onChangeText={setPlanDetails}
                   placeholderTextColor="#A0AEC0"
                 />
-                <Sandwich size={20} color="#666" style={styles.inputIcon} />
+                <Sandwich size={24} color="#666" style={styles.inputIcon} />
               </View>
-
             </View>
-
-            <TouchableOpacity 
-              style={styles.button} 
-              onPress={handleSearch}
-            >
-              {isLoading?<ActivityIndicator
-                size={18}
-                color={"white"}
-              />:<Text style={styles.buttonText}>Search</Text>}
-            </TouchableOpacity>
-          </View>
+            {/* {Object.entries(mealPlans).map(([meal, plan]) => (
+              <View key={meal} style={styles.mealSection}>
+                <View style={styles.mealHeader}>
+                  {meal === 'breakfast' && <Coffee size={24} color="#1db954" />}
+                  {meal === 'lunch' && <Apple size={24} color="#1db954" />}
+                  {meal === 'dinner' && <CookingPot size={24} color="#1db954" />}
+                  {meal === 'snacks' && <Croissant size={24} color="#1db954" />}
+                  <Text style={styles.mealTitle}>{meal.charAt(0).toUpperCase() + meal.slice(1)}</Text>
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder={`Describe your ${meal} plan`}
+                  value={plan}
+                  onChangeText={(text) => setMealPlans(prev => ({ ...prev, [meal]: text }))}
+                  multiline
+                  placeholderTextColor="#A0AEC0"
+                />
+              </View>
+            ))} */}
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={handleGeneratePlan}
+          >
+            {isLoading ? (
+              <ActivityIndicator size={24} color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Generate Meal Plan</Text>
+            )}
+          </TouchableOpacity>
+          </ScrollView>
         </Animated.View>
+      </GestureDetector>
     );
   }
 );
@@ -171,11 +197,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 28,
+    fontWeight: '700',
     color: '#1a1a1a',
   },
   closeButton: {
@@ -184,41 +215,51 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   inputSection: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: '600',
     color: '#1a1a1a',
     marginBottom: 8,
   },
   inputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
+    alignItems: 'flex-start',
+    backgroundColor: '#f7f7f7',
+    borderRadius: 16,
     marginBottom: 16,
     paddingHorizontal: 16,
-    height: 100,
+    paddingVertical: 12,
+    minHeight: 120,
   },
   input: {
     flex: 1,
     fontSize: 16,
     color: '#1a1a1a',
+    lineHeight: 24,
   },
   inputIcon: {
     marginLeft: 12,
+    marginTop: 4,
   },
   button: {
     backgroundColor: '#1db954',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     alignItems: 'center',
-    marginTop: 'auto',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   buttonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });

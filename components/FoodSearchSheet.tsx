@@ -31,12 +31,11 @@ const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 const FoodSearchBottomSheet = forwardRef<FoodSearchBottomSheetRef, FoodSearchBottomSheetProps>(
   ({ onSearch, onClose }, ref) => {
-    const translateY = useSharedValue(0);
+    const translateY = useSharedValue(40);
     const keyboard = useAnimatedKeyboard()
     const active = useSharedValue(false);
     const [foodName, setFoodName] = useState('');
     const [foodQuantity, setFoodQuantity] = useState('');
-    const insets = useSafeAreaInsets();
 
     const scrollTo = useCallback((destination: number) => {
       'worklet';
@@ -50,7 +49,7 @@ const FoodSearchBottomSheet = forwardRef<FoodSearchBottomSheetRef, FoodSearchBot
     useImperativeHandle(ref, () => ({
       open: () => scrollTo(MAX_TRANSLATE_Y),
       close: () => {
-        scrollTo(0);
+        scrollTo(40);
       },
     }));
 
@@ -89,6 +88,7 @@ const FoodSearchBottomSheet = forwardRef<FoodSearchBottomSheetRef, FoodSearchBot
     const handleSearch = () => {
       onSearch(foodName, foodQuantity);
     };
+    
 
     return (
         <Animated.View style={[styles.bottomSheetContainer, rBottomSheetStyle]}>
@@ -130,7 +130,7 @@ const FoodSearchBottomSheet = forwardRef<FoodSearchBottomSheetRef, FoodSearchBot
               style={styles.button} 
               onPress={handleSearch}
             >
-              <Text style={styles.buttonText}>Done</Text>
+              <Text style={styles.buttonText}>Search</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     backgroundColor: '#fff',
     position: 'absolute',
-    top: SCREEN_HEIGHT,
+    top: SCREEN_HEIGHT - 40,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
     zIndex: 1,
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   button: {
-    backgroundColor: '#6366F1',
+    backgroundColor: '#1db954',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

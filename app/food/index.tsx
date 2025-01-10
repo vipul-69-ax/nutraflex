@@ -8,10 +8,11 @@ import { useNutritionProfile } from '@/hooks/useNutrition';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { MealSection } from '@/components/MealComponents';
 import useUserProfileStore from '@/store/useProfileStore';
-import { Scan, Sparkle } from 'lucide-react-native';
+import { Apple, Beef, Flame, Heart, Scan, Sparkle } from 'lucide-react-native';
 import useAuthStore from '@/store/useAuthStore';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import MealPlannerSheet, { MealPlannerSheetRef } from '@/components/MealPlannerSheet';
+import * as Haptics from 'expo-haptics'
 
 type Macro = {
   name: string;
@@ -19,6 +20,7 @@ type Macro = {
   target?: number;
   color: string;
   unit: string;
+  icon: React.ReactNode;
 };
 
 const AnimatedMacroBar = ({ macro, maxValue, color }: { macro: Macro; maxValue: number; color: string }) => {
@@ -40,13 +42,18 @@ const AnimatedMacroBar = ({ macro, maxValue, color }: { macro: Macro; maxValue: 
 
   return (
     <View style={styles.macroBarContainer}>
-      <Text style={styles.macroName}>{macro.name}</Text>
+      <View style={styles.macroHeaderContainer}>
+        <View style={[styles.macroIcon, { backgroundColor: `${color}20` }]}>
+          {macro.icon}
+        </View>
+        <Text style={styles.macroName}>{macro.name}</Text>
+        <Text style={styles.macroValue}>
+          {macro.current}/{maxValue}{macro.unit}
+        </Text>
+      </View>
       <View style={styles.barBackground}>
         <Animated.View style={[styles.barFill, animatedStyles]} />
       </View>
-      <Text style={styles.macroValue}>
-        {macro.current}/{maxValue}{macro.unit}
-      </Text>
     </View>
   );
 };
@@ -56,7 +63,7 @@ export default function App() {
   const { response } = useAuthStore();
   const userId = response?.user?.id?.toString() as string;
   const mealPlanSheetRef = useRef<MealPlannerSheetRef>(null);
-  const {personalMealPlan} = useNutritionProfile()
+  const { personalMealPlan } = useNutritionProfile();
   const {
     meals,
     populateStore,
@@ -72,7 +79,7 @@ export default function App() {
   const { profile } = useUserProfileStore();
 
   const currentDate = new Date().toISOString().split('T')[0];
-  const todayMeals: DayMeal | undefined = !meals?undefined:meals.find(
+  const todayMeals: DayMeal | undefined = !meals ? undefined : meals.find(
     (dayMeal) => dayMeal.date === currentDate && dayMeal.userId === userId
   );
 
@@ -83,6 +90,7 @@ export default function App() {
       target: profile?.carbs,
       color: '#1db954',
       unit: 'g',
+      icon: <Apple size={16} color="#1db954" />,
     },
     {
       name: 'Fat',
@@ -90,6 +98,7 @@ export default function App() {
       target: profile?.fat,
       color: '#FFB6C1',
       unit: 'g',
+      icon: <Heart size={16} color="#FFB6C1" />,
     },
     {
       name: 'Protein',
@@ -97,6 +106,7 @@ export default function App() {
       target: profile?.protein,
       color: '#FFE082',
       unit: 'g',
+      icon: <Beef size={16} color="#FFE082" />,
     },
     {
       name: 'Calories',
@@ -104,6 +114,7 @@ export default function App() {
       target: profile?.calories,
       color: '#4DB6AC',
       unit: '',
+      icon: <Flame size={16} color="#4DB6AC" />,
     },
   ];
 
@@ -133,11 +144,13 @@ export default function App() {
   };
 
   const handleTrackMeal = (meal: Meal) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft)
     if (!userId) return;
     trackMeal(meal.id, userId);
   };
 
   const handleRemoveMeal = (meal: Meal) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid)
     if (!userId) return;
     removeMeal(meal.id, userId);
   };
@@ -151,27 +164,17 @@ export default function App() {
       {isLoading && <LoadingOverlay message="Searching food..." />}
       <ScrollView>
         <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <TouchableOpacity onPress={() => router.push('/profile')} style={styles.iconButton}>
-              <AntDesign name="user" size={24} color="#2d3436" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/food/scan')} style={styles.iconButton}>
-              <Scan size={24} color="#2d3436" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.titleContainer}>
-            <Text onPress={getSuggestedMeals} style={styles.title}>
-              Today's Nutrition
-            </Text>
-            <Text style={styles.subtitle}>
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </Text>
-          </View>
+          <Text style={styles.title}>Today's Nutrition</Text>
+          <Text style={styles.subtitle}>
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </Text>
         </View>
+
+        
 
         <View style={styles.macroContainer}>
           {macros.map((macro) => (
@@ -182,6 +185,23 @@ export default function App() {
               color={macro.color}
             />
           ))}
+        </View>
+
+        <View style={styles.iconContainer}>
+          <TouchableOpacity onPress={() => router.push('/profile')} style={styles.iconButton}>
+            <AntDesign name="user" size={24} color="#2d3436" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/food/scan')} style={styles.iconButton}>
+            <Scan size={24} color="#2d3436" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => {
+              mealPlanSheetRef.current?.open()
+            }} 
+            style={styles.iconButton}
+          >
+            <Sparkle size={24} color="#2d3436" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.mealsContainer}>
@@ -197,22 +217,13 @@ export default function App() {
             ))}
         </View>
       </ScrollView>
-      <Pressable onPress={()=>{
-        mealPlanSheetRef.current?.open()
-      }} style={{opacity:0.6}} className='absolute bottom-12 right-12 bg-[#1db954] p-4 rounded-full'>
-        <Sparkle
-          size={28}
-          color={"white"}
-        />
-      </Pressable>
       <MealPlannerSheet
-            ref={mealPlanSheetRef}
-            onSearch={()=>{}}
-            onClose={()=>{
-              mealPlanSheetRef.current?.close()
-              Keyboard.dismiss()
-            }}
-          />
+        ref={mealPlanSheetRef}
+        onClose={() => {
+          Keyboard.dismiss()
+          mealPlanSheetRef.current?.close()
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -223,29 +234,43 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   iconContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#f2f2f2',
+    borderRadius: 30,
+    marginHorizontal: 20,
+    marginVertical: 20,
   },
   iconButton: {
-    marginRight: 15,
-  },
-  titleContainer: {
-    flex: 1,
-    alignItems: 'flex-end',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
     color: '#2d3436',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#636e72',
     fontWeight: '500',
   },
@@ -265,30 +290,42 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   macroBarContainer: {
-    marginBottom: 15,
+    marginBottom: 20,
+  },
+  macroHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  macroIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   macroName: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 5,
+    flex: 1,
   },
   barBackground: {
-    height: 10,
+    height: 8,
     backgroundColor: '#e0e0e0',
-    borderRadius: 5,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
+    borderRadius: 4,
   },
   macroValue: {
     fontSize: 14,
     fontWeight: '500',
-    marginTop: 5,
-    textAlign: 'right',
   },
   mealsContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
   },
 });
 
