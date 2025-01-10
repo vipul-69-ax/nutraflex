@@ -17,7 +17,8 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { router, Stack } from 'expo-router';
 import { useDetectFood, useDetectFoodFromText } from '@/hooks/useFood';
-import FoodSearchBottomSheet, { FoodSearchBottomSheetRef } from '@/components/FoodSearchSheet';
+import FoodSearchBottomSheet, {FoodSearchBottomSheetRef} from '@/components/FoodSearchSheet';
+import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 
 export default function FoodScanner() {
@@ -37,12 +38,14 @@ export default function FoodScanner() {
 
   const handleCloseBottomSheet = () => {
     bottomSheetRef.current?.close();
+
     Keyboard.dismiss()
   };
 
   const handleTextSearch = async(foodName: string, foodQuantity: string) => {
     handleCloseBottomSheet()
     Keyboard.dismiss()
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft)
     await detectFoodFromText.mutateAsync({
       name:foodName,
       quantity:foodQuantity
@@ -221,6 +224,7 @@ export default function FoodScanner() {
   };
 
   return (
+    <BottomSheetModalProvider>
     <View style={styles.container}>
       <FoodSearchBottomSheet
             ref={bottomSheetRef}
@@ -268,7 +272,10 @@ export default function FoodScanner() {
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.iconButton}
-            onPress={() => router.back()}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid)
+              router.back()
+            }}
             disabled={isUploading || detectFood.isPending}
           >
             <Entypo name="cross" size={24} color="white" />
@@ -279,6 +286,7 @@ export default function FoodScanner() {
         )}
       </CameraView>
     </View>
+    </BottomSheetModalProvider>
   );
 }
 
