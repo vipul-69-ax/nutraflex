@@ -55,7 +55,6 @@ export default function LoginScreen() {
         if(!profile){
           router.replace("/auth/details")
           }else{
-          console.log("profile", profile)
           updateProfile(profile as any)
           router.replace("/food")
           }
@@ -86,7 +85,6 @@ export default function LoginScreen() {
         if(!profile){
           router.replace("/auth/details")
           }else{
-          console.log("profile", profile)
           updateProfile(profile as any)
           router.replace("/food")
           }

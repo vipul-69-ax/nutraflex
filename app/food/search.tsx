@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { View, Button, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import FoodSearchBottomSheet, { FoodSearchBottomSheetRef } from '@/components/FoodSearchSheet';
+import { FoodSearchBottomSheetRef } from '@/components/FoodSearchSheet';
 
 export default function App() {
   const bottomSheetRef = useRef<FoodSearchBottomSheetRef>(null);
@@ -12,7 +12,6 @@ export default function App() {
   };
 
   const handleSearch = (foodName: string, foodQuantity: string) => {
-    console.log(`Searching for ${foodName} (${foodQuantity})`);
     // Implement your search logic here
   };
 

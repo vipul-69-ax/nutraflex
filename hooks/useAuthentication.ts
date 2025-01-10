@@ -52,7 +52,6 @@ export function useAuth() {
     mutationFn: (data: { email: string; password: string }) =>
       api.post<AuthResponse>('/auth/login', data),
     onSuccess: (data) => {
-      console.log("here")
       setAuth(data.data);
       return data.data;
     },

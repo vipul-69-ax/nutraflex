@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Coffee, Apple, Croissant, CookingPot, Sandwich } from 'lucide-react-native';
+import { X, Sandwich } from 'lucide-react-native';
 import useUserProfileStore from '@/store/useProfileStore';
 import { useNutritionProfile } from '@/hooks/useNutrition';
 import useMealStore from '@/store/useMealStore';

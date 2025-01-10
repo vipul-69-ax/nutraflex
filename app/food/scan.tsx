@@ -219,7 +219,6 @@ export default function FoodScanner() {
         Alert.alert('Error', 'Failed to upload image. Please try again.');
       }
     } else {
-      console.log('Image picker cancelled');
     }
   };
 

@@ -13,7 +13,6 @@ export function useNutritionProfile() {
   const getNutritionProfileMutation = useMutation<NutritionProfile | boolean, Error, number>({
     mutationFn: async (id:number) => {
       if (!id) throw new Error('User ID not found');
-      console.log("id", id)
       const response = await api.post<NutritionProfile>('/nutrition/profile', { userId: id });
       if(response.status == 204){
         return false
